@@ -8,7 +8,7 @@ namespace ReenbitTest.Core.Entities
         public string LastName { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
         public DateTime LastActive { get; set; }
-        public ICollection<Message>? Messages { get; set; }
-        public ICollection<ChatRoomUser>? ChatRooms { get; set; }
+        public ICollection<Message> Messages { get; set; } = [];
+        public ICollection<ChatRoomUser> ChatRooms { get; set; } = [];
     }
 }
