@@ -3,12 +3,21 @@ using ReenbitTest.Core.Entities;
 
 namespace ReenbitTest.Infrastructure.Data
 {
+    /// <summary>
+    /// Provides functionality to seed initial data into the application database.
+    /// </summary>
     public class DataSeeder
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DataSeeder"/> class.
+        /// </summary>
+        /// <param name="context">The application database context.</param>
+        /// <param name="userManager">The user manager for handling user operations.</param>
+        /// <param name="roleManager">The role manager for handling role operations.</param>
         public DataSeeder(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
@@ -19,6 +28,10 @@ namespace ReenbitTest.Infrastructure.Data
             _roleManager = roleManager;
         }
 
+        /// <summary>
+        /// Seeds the database with initial data if it's empty.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         public async Task SeedAsync()
         {
             await _context.Database.EnsureCreatedAsync();
@@ -34,6 +47,10 @@ namespace ReenbitTest.Infrastructure.Data
             }
         }
 
+        /// <summary>
+        /// Seeds initial roles into the database.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         private async Task SeedRoles()
         {
             var roles = new List<string> { "Admin", "User", "PremiumUser" };
@@ -47,6 +64,10 @@ namespace ReenbitTest.Infrastructure.Data
             }
         }
 
+        /// <summary>
+        /// Seeds initial users into the database with appropriate roles.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         private async Task SeedUsers()
         {
             var users = new List<ApplicationUser>
@@ -110,6 +131,10 @@ namespace ReenbitTest.Infrastructure.Data
             }
         }
 
+        /// <summary>
+        /// Seeds initial chat rooms into the database.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         private async Task SeedChatRooms()
         {
             var chatRooms = new List<ChatRoom>
@@ -140,6 +165,10 @@ namespace ReenbitTest.Infrastructure.Data
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Seeds initial chat room user associations into the database.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         private async Task SeedChatRoomUsers()
         {
             var users = _context.Users.ToList();
@@ -207,6 +236,10 @@ namespace ReenbitTest.Infrastructure.Data
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Seeds initial messages into the database for each chat room.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         private async Task SeedMessages()
         {
             var users = _context.Users.ToList();
@@ -307,6 +340,10 @@ namespace ReenbitTest.Infrastructure.Data
             await _context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// Seeds message read receipts and updates the last seen information for chat room users.
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation.</returns>
         private async Task SeedMessageReads()
         {
             var messages = _context.Messages.ToList();
