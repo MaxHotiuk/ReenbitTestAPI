@@ -137,12 +137,22 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
-        // This is a permissive CORS policy suitable for development
-        // For production, specify exact origins instead of allowing all
-        policy.SetIsOriginAllowed(_ => true) // More permissive than AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials(); // Required for SignalR
+        if (builder.Environment.IsDevelopment())
+        {
+            // Development environment: more permissive CORS policy
+            policy.SetIsOriginAllowed(_ => true)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials(); // Required for SignalR
+        }
+        else
+        {
+            // Production environment: restrict to specific origins
+            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>())
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials(); // Required for SignalR
+        }
     });
 });
 
