@@ -45,16 +45,13 @@
     - [User Endpoints](#112-user-endpoints)
     - [Chat Room Endpoints](#113-chat-room-endpoints)
     - [Message Endpoints](#114-message-endpoints)
-12. [Testing](#12-testing)
-    - [Unit Testing](#121-unit-testing)
-    - [Integration Testing](#122-integration-testing)
-13. [Deployment](#13-deployment)
-    - [Azure Deployment](#131-azure-deployment)
-    - [CI/CD Pipeline](#132-cicd-pipeline)
-14. [Common Development Tasks](#14-common-development-tasks)
-    - [Adding a New Entity](#141-adding-a-new-entity)
-    - [Creating a Migration](#142-creating-a-migration)
-    - [Adding a New API Endpoint](#143-adding-a-new-api-endpoint)
+12. [Deployment](#12-deployment)
+    - [Azure Deployment](#121-azure-deployment)
+    - [CI/CD Pipeline](#122-cicd-pipeline)
+13. [Common Development Tasks](#13-common-development-tasks)
+    - [Adding a New Entity](#131-adding-a-new-entity)
+    - [Creating a Migration](#132-creating-a-migration)
+    - [Adding a New API Endpoint](#133-adding-a-new-api-endpoint)
 
 ## 1. Project Overview
 
@@ -1964,83 +1961,9 @@ Response Body:
 ]
 ```
 
-## 12. Testing
+## 12. Deployment
 
-### 12.1 Unit Testing
-
-The solution includes unit tests for core functionality:
-
-- **Repository Tests**: Test data access logic with an in-memory database
-- **Service Tests**: Test service logic with mocked dependencies
-- **Controller Tests**: Test API controllers with mocked services
-
-Example test for the ChatRepository:
-
-```csharp
-[Fact]
-public async Task GetChatRoomsAsync_ReturnsOnlyUsersChatRooms()
-{
-    // Arrange
-    var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-        .UseInMemoryDatabase("TestDb_GetChatRoomsAsync")
-        .Options;
-    
-    string userId = "user1";
-    string otherUserId = "user2";
-    
-    using (var context = new ApplicationDbContext(options))
-    {
-        // Seed database with test data
-        context.ChatRooms.Add(new ChatRoom
-        {
-            Id = 1,
-            Name = "User's Chat Room",
-            CreatedAt = DateTime.UtcNow,
-            Users = new List<ChatRoomUser>
-            {
-                new() { UserId = userId, JoinedAt = DateTime.UtcNow }
-            }
-        });
-        
-        context.ChatRooms.Add(new ChatRoom
-        {
-            Id = 2,
-            Name = "Other Chat Room",
-            CreatedAt = DateTime.UtcNow,
-            Users = new List<ChatRoomUser>
-            {
-                new() { UserId = otherUserId, JoinedAt = DateTime.UtcNow }
-            }
-        });
-        
-        await context.SaveChangesAsync();
-    }
-    
-    // Act
-    using (var context = new ApplicationDbContext(options))
-    {
-        var repository = new ChatRepository(context);
-        var chatRooms = await repository.GetChatRoomsAsync(userId);
-        
-        // Assert
-        Assert.Single(chatRooms);
-        Assert.Equal(1, chatRooms.First().Id);
-        Assert.Equal("User's Chat Room", chatRooms.First().Name);
-    }
-}
-```
-
-### 12.2 Integration Testing
-
-Integration tests verify the correct interaction between components:
-
-- **API Tests**: Test the API endpoints with a test server
-- **SignalR Tests**: Test real-time communication with SignalR clients
-- **Database Tests**: Test database operations against a test database
-
-## 13. Deployment
-
-### 13.1 Azure Deployment
+### 12.1 Azure Deployment
 
 The application is designed for deployment to Azure App Service with Azure SQL Database.
 
@@ -2051,7 +1974,7 @@ Azure resources required:
 - Azure SignalR Service
 - Azure Cognitive Services Text Analytics
 
-### 13.2 CI/CD Pipeline
+### 12.2 CI/CD Pipeline
 
 The solution includes GitHub Actions workflows for continuous integration and deployment:
 
@@ -2115,9 +2038,9 @@ jobs:
         package: ./app
 ```
 
-## 14. Common Development Tasks
+## 13. Common Development Tasks
 
-### 14.1 Adding a New Entity
+### 13.1 Adding a New Entity
 
 1. **Create the Entity Class**:
    ```csharp
@@ -2212,7 +2135,7 @@ jobs:
     dotnet ef database update --project ReenbitTest.Infrastructure --startup-project ReenbitTest.API
     ```
 
-### 14.2 Creating a Migration
+### 13.2 Creating a Migration
 
 ```bash
 # Create a new migration
@@ -2225,7 +2148,7 @@ dotnet ef database update --project ReenbitTest.Infrastructure --startup-project
 dotnet ef migrations script PreviousMigration MigrationName --project ReenbitTest.Infrastructure --startup-project ReenbitTest.API --output migration.sql
 ```
 
-### 14.3 Adding a New API Endpoint
+### 13.3 Adding a New API Endpoint
 
 1. **Create/update a DTO** (if needed):
    ```csharp
