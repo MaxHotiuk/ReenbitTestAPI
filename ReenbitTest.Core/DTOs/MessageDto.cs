@@ -9,5 +9,6 @@ namespace ReenbitTest.Core.DTOs
         public string SenderFullName { get; set; } = null!;
         public int ChatRoomId { get; set; }
         public string? SentimentLabel { get; set; }
+        public bool IsRead { get; set; } = false;
     }
 }

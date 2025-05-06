@@ -268,6 +268,12 @@ namespace ReenbitTest.Infrastructure.Migrations
                     b.Property<DateTime>("JoinedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("LastReadMessageId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LastSeen")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -275,6 +281,8 @@ namespace ReenbitTest.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ChatRoomId");
+
+                    b.HasIndex("LastReadMessageId");
 
                     b.HasIndex("UserId");
 
@@ -316,6 +324,33 @@ namespace ReenbitTest.Infrastructure.Migrations
                     b.HasIndex("SenderId");
 
                     b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("ReenbitTest.Core.Entities.MessageRead", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("MessageId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MessageReads");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -377,6 +412,10 @@ namespace ReenbitTest.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ReenbitTest.Core.Entities.Message", "LastReadMessage")
+                        .WithMany()
+                        .HasForeignKey("LastReadMessageId");
+
                     b.HasOne("ReenbitTest.Core.Entities.ApplicationUser", "User")
                         .WithMany("ChatRooms")
                         .HasForeignKey("UserId")
@@ -384,6 +423,8 @@ namespace ReenbitTest.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ChatRoom");
+
+                    b.Navigation("LastReadMessage");
 
                     b.Navigation("User");
                 });
@@ -406,6 +447,25 @@ namespace ReenbitTest.Infrastructure.Migrations
                     b.Navigation("Sender");
                 });
 
+            modelBuilder.Entity("ReenbitTest.Core.Entities.MessageRead", b =>
+                {
+                    b.HasOne("ReenbitTest.Core.Entities.Message", "Message")
+                        .WithMany("ReadBy")
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ReenbitTest.Core.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ReenbitTest.Core.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("ChatRooms");
@@ -418,6 +478,11 @@ namespace ReenbitTest.Infrastructure.Migrations
                     b.Navigation("Messages");
 
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("ReenbitTest.Core.Entities.Message", b =>
+                {
+                    b.Navigation("ReadBy");
                 });
 #pragma warning restore 612, 618
         }

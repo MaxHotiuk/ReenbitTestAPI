@@ -11,5 +11,6 @@ namespace ReenbitTest.Core.Entities
         public ChatRoom ChatRoom { get; set; } = null!;
         public string? SentimentScore { get; set; }
         public string? SentimentLabel { get; set; }
+        public ICollection<MessageRead> ReadBy { get; set; } = [];
     }
 }

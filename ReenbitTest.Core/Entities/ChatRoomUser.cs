@@ -8,5 +8,8 @@ namespace ReenbitTest.Core.Entities
         public int ChatRoomId { get; set; }
         public ChatRoom ChatRoom { get; set; } = null!;
         public DateTime JoinedAt { get; set; }
+        public int? LastReadMessageId { get; set; }
+        public Message? LastReadMessage { get; set; }
+        public DateTime? LastSeen { get; set; }
     }
 }

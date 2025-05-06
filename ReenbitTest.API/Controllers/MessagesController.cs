@@ -34,17 +34,18 @@ namespace ReenbitTest.API.Controllers
             if (!chatRoom.Users.Any(u => u.UserId == userId))
                 return Forbid();
 
-            var messages = await _chatRepository.GetMessagesForChatRoomAsync(chatRoomId, page, pageSize);
+            var messages = await _chatRepository.GetMessagesForChatRoomWithStatusAsync(chatRoomId, userId, page, pageSize);
 
             var messageDtos = messages.Select(m => new MessageDto
             {
-                Id = m.Id,
-                Content = m.Content,
-                SentAt = m.SentAt,
-                SenderUserName = m.Sender.UserName!,
-                SenderFullName = $"{m.Sender.FirstName} {m.Sender.LastName}",
-                ChatRoomId = m.ChatRoomId!.Value,
-                SentimentLabel = m.SentimentLabel
+                Id = m.Message.Id,
+                Content = m.Message.Content,
+                SentAt = m.Message.SentAt,
+                SenderUserName = m.Message.Sender.UserName!,
+                SenderFullName = $"{m.Message.Sender.FirstName} {m.Message.Sender.LastName}",
+                ChatRoomId = m.Message.ChatRoomId!.Value,
+                SentimentLabel = m.Message.SentimentLabel,
+                IsRead = m.IsRead
             });
 
             return Ok(messageDtos);

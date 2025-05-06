@@ -14,6 +14,7 @@ namespace ReenbitTest.Infrastructure.Data
         public DbSet<ChatRoom> ChatRooms { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<ChatRoomUser> ChatRoomUsers { get; set; }
+        public DbSet<MessageRead> MessageReads { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -42,6 +43,12 @@ namespace ReenbitTest.Infrastructure.Data
                 .HasOne(cu => cu.ChatRoom)
                 .WithMany(c => c.Users)
                 .HasForeignKey(cu => cu.ChatRoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            modelBuilder.Entity<MessageRead>()
+                .HasOne(mr => mr.Message)
+                .WithMany(m => m.ReadBy)
+                .HasForeignKey(mr => mr.MessageId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

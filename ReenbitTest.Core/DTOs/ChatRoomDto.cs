@@ -7,5 +7,7 @@ namespace ReenbitTest.Core.DTOs
         public DateTime CreatedAt { get; set; }
         public List<UserDto> Users { get; set; } = [];
         public int MessageCount { get; set; }
+        public int UnreadCount { get; set; }
+        public string? LastMessage { get; set; }
     }
 }

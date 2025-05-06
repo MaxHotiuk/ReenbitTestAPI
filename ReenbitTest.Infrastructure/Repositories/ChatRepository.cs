@@ -83,5 +83,64 @@ namespace ReenbitTest.Infrastructure.Repositories
             _context.ChatRoomUsers.Remove(chatRoomUser);
             return await _context.SaveChangesAsync() > 0;
         }
+
+        public async Task<IEnumerable<(Message Message, bool IsRead)>> GetMessagesForChatRoomWithStatusAsync(int chatRoomId, string userId, int page = 1, int pageSize = 20)
+        {
+            return await _context.Messages
+                .Include(m => m.Sender)
+                .Where(m => m.ChatRoomId == chatRoomId)
+                .OrderByDescending(m => m.SentAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(m => new 
+                { 
+                    Message = m, 
+                    IsRead = _context.MessageReads.Any(r => r.MessageId == m.Id && r.UserId == userId) 
+                })
+                .OrderBy(m => m.Message.SentAt)
+                .ToListAsync()
+                .ContinueWith(task => task.Result.Select(m => (m.Message, m.IsRead)));
+        }
+
+        public async Task<IEnumerable<(ChatRoom ChatRoom, int UnreadCount, string? LastMessage)>> GetLastMessagesWithUnreadCountForChatRoomsAsync(string userId)
+        {
+            return await _context.ChatRooms
+                .Include(c => c.Users)
+                    .ThenInclude(u => u.User)
+                .Where(c => c.Users.Any(u => u.UserId == userId))
+                .Select(c => new
+                {
+                    ChatRoom = c,
+                    UnreadCount = _context.Messages
+                        .Where(m => m.ChatRoomId == c.Id && !_context.MessageReads.Any(r => r.MessageId == m.Id && r.UserId == userId))
+                        .Count(),
+                    LastMessage = _context.Messages
+                        .Where(m => m.ChatRoomId == c.Id)
+                        .OrderByDescending(m => m.SentAt)
+                        .Select(m => m.Content)
+                        .FirstOrDefault()
+                })
+                .ToListAsync()
+                .ContinueWith(task => task.Result.Select(r => (r.ChatRoom, r.UnreadCount, r.LastMessage)));
+        }
+
+        public async Task<bool> MarkAllAsReadByChatRoomIdAsync(int chatRoomId, string userId)
+        {
+            var messages = await _context.Messages
+                .Where(m => m.ChatRoomId == chatRoomId && !_context.MessageReads.Any(r => r.MessageId == m.Id && r.UserId == userId))
+                .ToListAsync();
+
+            foreach (var message in messages)
+            {
+                _context.MessageReads.Add(new MessageRead
+                {
+                    MessageId = message.Id,
+                    UserId = userId,
+                    ReadAt = DateTime.UtcNow
+                });
+            }
+
+            return await _context.SaveChangesAsync() > 0;
+        }
     }
 }

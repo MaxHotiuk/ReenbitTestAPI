@@ -26,14 +26,14 @@ namespace ReenbitTest.API.Controllers
         public async Task<ActionResult<IEnumerable<ChatRoomDto>>> GetChatRooms()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
-            var chatRooms = await _chatRepository.GetChatRoomsAsync(userId);
+            var chatRooms = await _chatRepository.GetLastMessagesWithUnreadCountForChatRoomsAsync(userId);
 
             var chatRoomDtos = chatRooms.Select(c => new ChatRoomDto
             {
-                Id = c.Id,
-                Name = c.Name,
-                CreatedAt = c.CreatedAt,
-                Users = c.Users.Select(u => new UserDto
+                Id = c.ChatRoom.Id,
+                Name = c.ChatRoom.Name,
+                CreatedAt = c.ChatRoom.CreatedAt,
+                Users = c.ChatRoom.Users.Select(u => new UserDto
                 {
                     Id = u.User.Id,
                     UserName = u.User.UserName!,
@@ -41,7 +41,9 @@ namespace ReenbitTest.API.Controllers
                     FirstName = u.User.FirstName,
                     LastName = u.User.LastName
                 }).ToList(),
-                MessageCount = c.Messages?.Count() ?? 0
+                MessageCount = c.ChatRoom.Messages?.Count() ?? 0,
+                UnreadCount = c.UnreadCount,
+                LastMessage = c.LastMessage
             });
 
             return Ok(chatRoomDtos);
@@ -76,6 +78,25 @@ namespace ReenbitTest.API.Controllers
             };
 
             return Ok(chatRoomDto);
+        }
+
+        [HttpPost("{id}/read")]
+        public async Task<IActionResult> MarkAllAsRead(int id)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+            var chatRoom = await _chatRepository.GetChatRoomByIdAsync(id);
+
+            if (chatRoom == null)
+                return NotFound();
+
+            if (!chatRoom.Users.Any(u => u.UserId == userId))
+                return Forbid();
+
+            var result = await _chatRepository.MarkAllAsReadByChatRoomIdAsync(id, userId);
+            if (!result)
+                return BadRequest("Failed to mark messages as read");
+
+            return NoContent();
         }
 
         [HttpPost]
