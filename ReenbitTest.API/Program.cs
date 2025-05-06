@@ -148,7 +148,32 @@ builder.Services.AddCors(options =>
         else
         {
             // Production environment: restrict to specific origins
-            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>())
+            // Get origins from configuration - handle both string and string[] formats
+            var originsConfig = builder.Configuration.GetSection("AllowedOrigins");
+            string[] allowedOrigins;
+            
+            // Check if it's a string or array and process accordingly
+            if (originsConfig.Value != null)
+            {
+                // It's a single string value
+                allowedOrigins = new string[] { originsConfig.Value };
+            }
+            else
+            {
+                // It's an array
+                allowedOrigins = originsConfig.Get<string[]>() ?? new string[] 
+                { 
+                    "https://yellow-river-0e652990f.6.azurestaticapps.net"
+                };
+            }
+            
+            // Apply the origins - ensure they're not empty
+            if (allowedOrigins.Length == 0)
+            {
+                allowedOrigins = new string[] { "https://yellow-river-0e652990f.6.azurestaticapps.net" };
+            }
+            
+            policy.WithOrigins(allowedOrigins)
                   .AllowAnyMethod()
                   .AllowAnyHeader()
                   .AllowCredentials(); // Required for SignalR
