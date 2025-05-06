@@ -7,6 +7,9 @@ using System.Security.Claims;
 
 namespace ReenbitTest.API.Controllers
 {
+    /// <summary>
+    /// Controller responsible for managing messages within chat rooms
+    /// </summary>
     [ApiController]
     [Route("api/chatrooms/{chatRoomId}/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -14,11 +17,26 @@ namespace ReenbitTest.API.Controllers
     {
         private readonly IChatRepository _chatRepository;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MessagesController"/> class
+        /// </summary>
+        /// <param name="chatRepository">Repository for managing chat-related operations</param>
         public MessagesController(IChatRepository chatRepository)
         {
             _chatRepository = chatRepository;
         }
 
+        /// <summary>
+        /// Gets messages for a specific chat room with pagination
+        /// </summary>
+        /// <param name="chatRoomId">The ID of the chat room</param>
+        /// <param name="page">The page number to retrieve (default: 1)</param>
+        /// <param name="pageSize">The number of messages per page (default: 20)</param>
+        /// <returns>
+        /// 200 OK with collection of message DTOs for the specified chat room
+        /// 403 Forbidden if user is not a member of the chat room
+        /// 404 Not Found if chat room does not exist
+        /// </returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MessageDto>>> GetMessages(
             int chatRoomId, 

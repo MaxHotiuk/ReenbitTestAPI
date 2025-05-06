@@ -6,6 +6,9 @@ using ReenbitTest.Core.Interfaces;
 
 namespace ReenbitTest.API.Controllers
 {
+    /// <summary>
+    /// Controller responsible for managing user-related operations
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -13,11 +16,21 @@ namespace ReenbitTest.API.Controllers
     {
         private readonly IUserRepository _userRepository;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UsersController"/> class
+        /// </summary>
+        /// <param name="userRepository">Repository for managing user-related operations</param>
         public UsersController(IUserRepository userRepository)
         {
             _userRepository = userRepository;
         }
 
+        /// <summary>
+        /// Gets all users in the system
+        /// </summary>
+        /// <returns>
+        /// 200 OK with collection of user DTOs
+        /// </returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers()
         {
@@ -35,6 +48,14 @@ namespace ReenbitTest.API.Controllers
             return Ok(userDtos);
         }
 
+        /// <summary>
+        /// Gets a specific user by their ID
+        /// </summary>
+        /// <param name="id">The ID of the user to retrieve</param>
+        /// <returns>
+        /// 200 OK with user details
+        /// 404 Not Found if user does not exist
+        /// </returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<UserDto>> GetUser(string id)
         {

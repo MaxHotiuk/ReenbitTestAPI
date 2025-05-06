@@ -12,16 +12,26 @@ using System.Text;
 using DotNetEnv;
 using Microsoft.Azure.SignalR;
 
-// Load environment variables from .env file
+// -------------------------------------------------------------------------
+// Environment Setup
+// -------------------------------------------------------------------------
+// Load environment variables from .env file for local development and testing
+// In production, these variables should be set in Azure App Configuration
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+// -------------------------------------------------------------------------
+// API Documentation & Developer Tools
+// -------------------------------------------------------------------------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+// Setup Swagger with JWT authentication support for API documentation and testing
 builder.Services.AddSwaggerGen(options =>
 {
+    // Configure JWT bearer authentication for Swagger UI
+    // This allows developers to authenticate and test secured endpoints
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -48,14 +58,23 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Configure DbContext with Azure SQL
+// -------------------------------------------------------------------------
+// Azure SQL Database Configuration
+// -------------------------------------------------------------------------
+// Configure Entity Framework to use Azure SQL with appropriate connection pooling
+// Connection string is stored in environment variables for security
 builder.Services.AddDbContext<ApplicationDbContext>(options => 
     options.UseSqlServer(Env.GetString("SQL_CONNECTION_STRING")), 
+    // Scoped lifetime ensures proper connection management per request
     ServiceLifetime.Scoped);
 
-// Configure Identity
+// -------------------------------------------------------------------------
+// Identity & Authentication Configuration
+// -------------------------------------------------------------------------
+// Configure ASP.NET Core Identity with secure password requirements
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
+    // Security best practices for password requirements
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
     options.Password.RequireUppercase = true;
@@ -65,7 +84,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// Configure JWT Authentication
+// Configure JWT Authentication with industry best practices
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -75,17 +94,23 @@ builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
+        // Ensure token is signed with our secret key
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Env.GetString("JWT_TOKEN_SECRET"))),
+        
+        // Validate issuer and audience to prevent token misuse
         ValidateIssuer = true,
         ValidIssuer = builder.Configuration["JWT:Issuer"],
         ValidateAudience = true,
         ValidAudience = builder.Configuration["JWT:Audience"],
+        
+        // Check token expiration and set zero clock skew for precise timing
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
 
-    // Configure for SignalR
+    // Special configuration for SignalR to extract token from query string
+    // This enables authentication in SignalR WebSocket connections
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
@@ -93,6 +118,7 @@ builder.Services.AddAuthentication(options =>
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
             
+            // Only extract token for SignalR hub requests
             if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chatHub"))
             {
                 context.Token = accessToken;
@@ -103,37 +129,58 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Configure CORS
+// -------------------------------------------------------------------------
+// CORS Configuration
+// -------------------------------------------------------------------------
+// Configure Cross-Origin Resource Sharing to allow frontend access
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("CorsPolicy", policy =>
     {
+        // This is a permissive CORS policy suitable for development
+        // For production, specify exact origins instead of allowing all
         policy.SetIsOriginAllowed(_ => true) // More permissive than AllowAnyOrigin()
               .AllowAnyMethod()
               .AllowAnyHeader()
-              .AllowCredentials();
+              .AllowCredentials(); // Required for SignalR
     });
 });
 
-// Configure SignalR
+// -------------------------------------------------------------------------
+// Azure SignalR Service Configuration
+// -------------------------------------------------------------------------
+// Configure Azure SignalR Service for scalable real-time messaging
 builder.Services.AddSignalR()
     .AddAzureSignalR(options =>
     {
+        // Connection string from environment variables
         options.ConnectionString = Env.GetString("SIGNALR_CONNECTION_STRING");
 
-        // Important settings for connection stability
+        // Server sticky mode ensures consistent routing for client connections
+        // Required for features like user-to-user messaging and connection reliability
         options.ServerStickyMode = ServerStickyMode.Required;
+        
+        // Graceful shutdown configuration ensures active connections are not abruptly terminated
+        // during app service restarts or deployments
         options.GracefulShutdown.Mode = GracefulShutdownMode.WaitForClientsClose;
         options.GracefulShutdown.Timeout = TimeSpan.FromSeconds(30);
 
+        // Initial hub connections to optimize performance under load
+        // Helps reduce connection latency for the first set of clients
         options.InitialHubServerConnectionCount = 10;
         
-        // This helps track events like connection issues
+        // Sets the lifetime for access tokens used in client-service authentication
+        // Balances security (shorter lifetime) with user experience (avoiding frequent reconnects)
         options.AccessTokenLifetime = TimeSpan.FromHours(1);
     });
 
-// Register repositories and services
-builder.Services.AddScoped<IChatRepository, ChatRepository>();
+// -------------------------------------------------------------------------
+// DI Container Service Registration
+// -------------------------------------------------------------------------
+// Register application services with the dependency injection container
+// Repositories and services are registered with scoped lifetime for proper resource management
+
+// Register authentication service with JWT token support
 builder.Services.AddScoped<IAuthService>(provider => 
     new AuthService(
         provider.GetRequiredService<UserManager<ApplicationUser>>(),
@@ -141,32 +188,43 @@ builder.Services.AddScoped<IAuthService>(provider =>
         provider.GetRequiredService<IConfiguration>(),
         Env.GetString("JWT_TOKEN_SECRET")));
 
+// Register Azure Cognitive Services for text sentiment analysis
 builder.Services.AddScoped<ISentimentAnalysisService>(provider =>
     new SentimentAnalysisService(
         Env.GetString("COGNITIVE_SERVICE_ENDPOINT"),
         Env.GetString("COGNITIVE_SERVICE_KEY_1")));
 
+// Register data access repositories
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
+// Register data seeding service for initialization
 builder.Services.AddScoped<DataSeeder>();
 
+// -------------------------------------------------------------------------
+// Application Pipeline Configuration
+// -------------------------------------------------------------------------
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// Configure the HTTP request pipeline with appropriate middleware
 if (app.Environment.IsDevelopment())
 {
+    // Enable Swagger UI in development environment only
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Seed initial data
+// -------------------------------------------------------------------------
+// Database Seeding
+// -------------------------------------------------------------------------
+// Seed initial data for testing and development
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var seeder = services.GetRequiredService<DataSeeder>();
+        // Uncomment to seed data during startup
         // await seeder.SeedAsync();
     }
     catch (Exception ex)
@@ -176,13 +234,22 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// -------------------------------------------------------------------------
+// Application Middleware Pipeline
+// -------------------------------------------------------------------------
+// Enforce HTTPS for all communications
 app.UseHttpsRedirection();
+
+// Apply CORS policy to allow frontend access
 app.UseCors("CorsPolicy");
 
+// Enable authentication and authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Map API controllers and SignalR hub
 app.MapControllers();
-app.MapHub<ChatHub>("/chatHub");
+app.MapHub<ChatHub>("/chatHub"); // Maps the chat hub to the /chatHub endpoint
 
+// Start the application
 app.Run();

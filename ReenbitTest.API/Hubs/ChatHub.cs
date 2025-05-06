@@ -10,6 +10,13 @@ using System.Threading.Tasks;
 
 namespace ReenbitTest.API.Hubs
 {
+    /// <summary>
+    /// SignalR hub responsible for real-time chat communication between users
+    /// </summary>
+    /// <remarks>
+    /// This hub handles connection management, chat room operations, and message delivery
+    /// using Azure SignalR Service for scalable real-time communication
+    /// </remarks>
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class ChatHub : Hub
     {
@@ -18,12 +25,31 @@ namespace ReenbitTest.API.Hubs
         private readonly ISentimentAnalysisService _sentimentAnalysisService;
         private readonly ILogger<ChatHub> _logger;
 
+        /// <summary>
+        /// Dictionary mapping user IDs to their active connection IDs
+        /// </summary>
+        /// <remarks>
+        /// Uses ConcurrentDictionary for thread safety in multi-connection scenarios
+        /// </remarks>
         private static readonly ConcurrentDictionary<string, HashSet<string>> _userConnections 
             = new ConcurrentDictionary<string, HashSet<string>>();
         
+        /// <summary>
+        /// Dictionary mapping connection IDs to their chat room groups
+        /// </summary>
+        /// <remarks>
+        /// Uses ConcurrentDictionary for thread safety when managing connection-group associations
+        /// </remarks>
         private static readonly ConcurrentDictionary<string, HashSet<string>> _connectionGroups 
             = new ConcurrentDictionary<string, HashSet<string>>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChatHub"/> class
+        /// </summary>
+        /// <param name="chatRepository">Repository for managing chat-related operations</param>
+        /// <param name="userRepository">Repository for managing user-related operations</param>
+        /// <param name="sentimentAnalysisService">Service for analyzing message sentiment</param>
+        /// <param name="logger">Logger for hub operations</param>
         public ChatHub(
             IChatRepository chatRepository,
             IUserRepository userRepository,
@@ -36,6 +62,13 @@ namespace ReenbitTest.API.Hubs
             _logger = logger;
         }
 
+        /// <summary>
+        /// Handles client connection events
+        /// </summary>
+        /// <remarks>
+        /// Tracks the new connection ID in connection dictionaries
+        /// </remarks>
+        /// <returns>A task that represents the asynchronous operation</returns>
         public override async Task OnConnectedAsync()
         {
             var userId = Context.User!.FindFirst(ClaimTypes.NameIdentifier)!.Value;
@@ -57,6 +90,14 @@ namespace ReenbitTest.API.Hubs
             await base.OnConnectedAsync();
         }
 
+        /// <summary>
+        /// Handles client disconnection events
+        /// </summary>
+        /// <param name="exception">Exception that caused the disconnection, if any</param>
+        /// <remarks>
+        /// Cleans up connection records and removes the connection from all groups
+        /// </remarks>
+        /// <returns>A task that represents the asynchronous operation</returns>
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             var userId = Context.User!.FindFirst(ClaimTypes.NameIdentifier)!.Value;
@@ -93,6 +134,14 @@ namespace ReenbitTest.API.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
+        /// <summary>
+        /// Adds a client to a chat room
+        /// </summary>
+        /// <param name="chatRoomId">The ID of the chat room to join</param>
+        /// <remarks>
+        /// Validates user membership, adds to SignalR group, and sends recent messages history
+        /// </remarks>
+        /// <returns>A task that represents the asynchronous operation</returns>
         public async Task JoinChatRoom(int chatRoomId)
         {
             var userId = Context.User!.FindFirst(ClaimTypes.NameIdentifier)!.Value;
@@ -176,6 +225,14 @@ namespace ReenbitTest.API.Hubs
             }
         }
 
+        /// <summary>
+        /// Removes a client from a chat room
+        /// </summary>
+        /// <param name="chatRoomId">The ID of the chat room to leave</param>
+        /// <remarks>
+        /// Removes connection from the SignalR group and notifies other users
+        /// </remarks>
+        /// <returns>A task that represents the asynchronous operation</returns>
         public async Task LeaveChatRoom(int chatRoomId)
         {
             var userId = Context.User!.FindFirst(ClaimTypes.NameIdentifier)!.Value;
@@ -212,6 +269,15 @@ namespace ReenbitTest.API.Hubs
             }
         }
 
+        /// <summary>
+        /// Sends a message to a chat room
+        /// </summary>
+        /// <param name="messageDto">Data transfer object containing message information</param>
+        /// <remarks>
+        /// Validates user membership, analyzes message sentiment, persists to database,
+        /// and broadcasts to all connections in the chat room group
+        /// </remarks>
+        /// <returns>A task that represents the asynchronous operation</returns>
         public async Task SendMessage(CreateMessageDto messageDto)
         {
             var userId = Context.User!.FindFirst(ClaimTypes.NameIdentifier)!.Value;
@@ -298,6 +364,14 @@ namespace ReenbitTest.API.Hubs
             }
         }
 
+        /// <summary>
+        /// Broadcasts a typing notification to other users in a chat room
+        /// </summary>
+        /// <param name="chatRoomId">The ID of the chat room</param>
+        /// <remarks>
+        /// Notifies other users in the group that this user is currently typing
+        /// </remarks>
+        /// <returns>A task that represents the asynchronous operation</returns>
         public async Task UserIsTyping(int chatRoomId)
         {
             try
@@ -319,6 +393,14 @@ namespace ReenbitTest.API.Hubs
             }
         }
 
+        /// <summary>
+        /// Broadcasts a stopped typing notification to other users in a chat room
+        /// </summary>
+        /// <param name="chatRoomId">The ID of the chat room</param>
+        /// <remarks>
+        /// Notifies other users in the group that this user has stopped typing
+        /// </remarks>
+        /// <returns>A task that represents the asynchronous operation</returns>
         public async Task UserStoppedTyping(int chatRoomId)
         {
             try
@@ -340,6 +422,14 @@ namespace ReenbitTest.API.Hubs
             }
         }
 
+        /// <summary>
+        /// Provides connection status information to the client
+        /// </summary>
+        /// <remarks>
+        /// Returns connection ID, user ID, available chat rooms, and active groups
+        /// to help the client maintain connection state awareness
+        /// </remarks>
+        /// <returns>A task that represents the asynchronous operation</returns>
         public async Task GetConnectionInfo()
         {
             var userId = Context.User!.FindFirst(ClaimTypes.NameIdentifier)!.Value;
@@ -360,6 +450,13 @@ namespace ReenbitTest.API.Hubs
             });
         }
         
+        /// <summary>
+        /// Handles client heartbeat to maintain connection and group memberships
+        /// </summary>
+        /// <remarks>
+        /// Re-establishes group membership if needed and confirms connection with timestamp
+        /// </remarks>
+        /// <returns>A task that represents the asynchronous operation</returns>
         public async Task Heartbeat()
         {
             var userId = Context.User!.FindFirst(ClaimTypes.NameIdentifier)!.Value;

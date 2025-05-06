@@ -8,6 +8,9 @@ using System.Security.Claims;
 
 namespace ReenbitTest.API.Controllers
 {
+    /// <summary>
+    /// Controller responsible for managing chat rooms, including creation, retrieval, and user management
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -16,12 +19,23 @@ namespace ReenbitTest.API.Controllers
         private readonly IChatRepository _chatRepository;
         private readonly IUserRepository _userRepository;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChatRoomsController"/> class
+        /// </summary>
+        /// <param name="chatRepository">Repository for managing chat-related operations</param>
+        /// <param name="userRepository">Repository for managing user-related operations</param>
         public ChatRoomsController(IChatRepository chatRepository, IUserRepository userRepository)
         {
             _chatRepository = chatRepository;
             _userRepository = userRepository;
         }
 
+        /// <summary>
+        /// Gets all chat rooms for the authenticated user with last message and unread count information
+        /// </summary>
+        /// <returns>
+        /// 200 OK with collection of chat room DTOs that the current user is part of
+        /// </returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ChatRoomDto>>> GetChatRooms()
         {
@@ -49,6 +63,15 @@ namespace ReenbitTest.API.Controllers
             return Ok(chatRoomDtos);
         }
 
+        /// <summary>
+        /// Gets a specific chat room by its ID
+        /// </summary>
+        /// <param name="id">The ID of the chat room to retrieve</param>
+        /// <returns>
+        /// 200 OK with chat room details
+        /// 403 Forbidden if user is not a member of the chat room
+        /// 404 Not Found if chat room does not exist
+        /// </returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<ChatRoomDto>> GetChatRoom(int id)
         {
@@ -80,6 +103,16 @@ namespace ReenbitTest.API.Controllers
             return Ok(chatRoomDto);
         }
 
+        /// <summary>
+        /// Marks all messages in a chat room as read for the current user
+        /// </summary>
+        /// <param name="id">The ID of the chat room</param>
+        /// <returns>
+        /// 204 No Content if successful
+        /// 400 Bad Request if operation fails
+        /// 403 Forbidden if user is not a member of the chat room
+        /// 404 Not Found if chat room does not exist
+        /// </returns>
         [HttpPost("{id}/read")]
         public async Task<IActionResult> MarkAllAsRead(int id)
         {
@@ -99,6 +132,13 @@ namespace ReenbitTest.API.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Creates a new chat room
+        /// </summary>
+        /// <param name="createChatRoomDto">The chat room creation data</param>
+        /// <returns>
+        /// 201 Created with the newly created chat room details
+        /// </returns>
         [HttpPost]
         public async Task<ActionResult<ChatRoomDto>> CreateChatRoom(CreateChatRoomDto createChatRoomDto)
         {
@@ -151,6 +191,17 @@ namespace ReenbitTest.API.Controllers
             return CreatedAtAction(nameof(GetChatRoom), new { id = chatRoom.Id }, chatRoomDto);
         }
 
+        /// <summary>
+        /// Adds a user to an existing chat room
+        /// </summary>
+        /// <param name="id">The ID of the chat room</param>
+        /// <param name="userId">The ID of the user to add</param>
+        /// <returns>
+        /// 204 No Content if successful
+        /// 400 Bad Request if operation fails
+        /// 403 Forbidden if current user is not a member of the chat room
+        /// 404 Not Found if chat room does not exist
+        /// </returns>
         [HttpPost("{id}/users")]
         public async Task<IActionResult> AddUserToChatRoom(int id, [FromBody] string userId)
         {
@@ -170,6 +221,17 @@ namespace ReenbitTest.API.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Removes a user from a chat room
+        /// </summary>
+        /// <param name="id">The ID of the chat room</param>
+        /// <param name="userId">The ID of the user to remove</param>
+        /// <returns>
+        /// 204 No Content if successful
+        /// 400 Bad Request if operation fails
+        /// 403 Forbidden if current user is not authorized to remove the specified user
+        /// 404 Not Found if chat room does not exist
+        /// </returns>
         [HttpDelete("{id}/users/{userId}")]
         public async Task<IActionResult> RemoveUserFromChatRoom(int id, string userId)
         {

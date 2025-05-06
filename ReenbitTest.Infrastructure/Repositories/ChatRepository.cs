@@ -5,15 +5,24 @@ using ReenbitTest.Infrastructure.Data;
 
 namespace ReenbitTest.Infrastructure.Repositories
 {
+    /// <summary>
+    /// Implementation of <see cref="IChatRepository"/> that provides data access operations
+    /// for chat-related entities using Entity Framework Core with Azure SQL Database.
+    /// </summary>
     public class ChatRepository : IChatRepository
     {
         private readonly ApplicationDbContext _context;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChatRepository"/> class.
+        /// </summary>
+        /// <param name="context">The database context used for data access.</param>
         public ChatRepository(ApplicationDbContext context)
         {
             _context = context;
         }
 
+        /// <inheritdoc/>
         public async Task<IEnumerable<ChatRoom>> GetChatRoomsAsync(string userId)
         {
             return await _context.ChatRooms
@@ -23,6 +32,7 @@ namespace ReenbitTest.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        /// <inheritdoc/>
         public async Task<ChatRoom> GetChatRoomByIdAsync(int chatRoomId)
         {
             var chatRoom = await _context.ChatRooms
@@ -33,6 +43,7 @@ namespace ReenbitTest.Infrastructure.Repositories
             return chatRoom;
         }
 
+        /// <inheritdoc/>
         public async Task<ChatRoom> CreateChatRoomAsync(ChatRoom chatRoom)
         {
             _context.ChatRooms.Add(chatRoom);
@@ -40,6 +51,7 @@ namespace ReenbitTest.Infrastructure.Repositories
             return chatRoom;
         }
 
+        /// <inheritdoc/>
         public async Task<IEnumerable<Message>> GetMessagesForChatRoomAsync(int chatRoomId, int page = 1, int pageSize = 20)
         {
             return await _context.Messages
@@ -52,6 +64,7 @@ namespace ReenbitTest.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        /// <inheritdoc/>
         public async Task<Message> AddMessageAsync(Message message)
         {
             _context.Messages.Add(message);
@@ -59,6 +72,7 @@ namespace ReenbitTest.Infrastructure.Repositories
             return message;
         }
 
+        /// <inheritdoc/>
         public async Task<bool> AddUserToChatRoomAsync(string userId, int chatRoomId)
         {
             var chatRoomUser = new ChatRoomUser
@@ -72,6 +86,7 @@ namespace ReenbitTest.Infrastructure.Repositories
             return await _context.SaveChangesAsync() > 0;
         }
 
+        /// <inheritdoc/>
         public async Task<bool> RemoveUserFromChatRoomAsync(string userId, int chatRoomId)
         {
             var chatRoomUser = await _context.ChatRoomUsers
@@ -84,6 +99,7 @@ namespace ReenbitTest.Infrastructure.Repositories
             return await _context.SaveChangesAsync() > 0;
         }
 
+        /// <inheritdoc/>
         public async Task<IEnumerable<(Message Message, bool IsRead)>> GetMessagesForChatRoomWithStatusAsync(int chatRoomId, string userId, int page = 1, int pageSize = 20)
         {
             return await _context.Messages
@@ -102,6 +118,7 @@ namespace ReenbitTest.Infrastructure.Repositories
                 .ContinueWith(task => task.Result.Select(m => (m.Message, m.IsRead)));
         }
 
+        /// <inheritdoc/>
         public async Task<IEnumerable<(ChatRoom ChatRoom, int UnreadCount, string? LastMessage)>> GetLastMessagesWithUnreadCountForChatRoomsAsync(string userId)
         {
             return await _context.ChatRooms
@@ -124,6 +141,7 @@ namespace ReenbitTest.Infrastructure.Repositories
                 .ContinueWith(task => task.Result.Select(r => (r.ChatRoom, r.UnreadCount, r.LastMessage)));
         }
 
+        /// <inheritdoc/>
         public async Task<bool> MarkAllAsReadByChatRoomIdAsync(int chatRoomId, string userId)
         {
             var messages = await _context.Messages

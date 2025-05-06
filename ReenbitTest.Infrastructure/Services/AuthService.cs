@@ -10,6 +10,10 @@ using ReenbitTest.Core.Interfaces;
 
 namespace ReenbitTest.Infrastructure.Services
 {
+    /// <summary>
+    /// Implementation of <see cref="IAuthService"/> that handles authentication using ASP.NET Core Identity
+    /// and JWT token generation.
+    /// </summary>
     public class AuthService : IAuthService
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -17,6 +21,17 @@ namespace ReenbitTest.Infrastructure.Services
         private readonly IConfiguration _configuration;
         private readonly string _jwtSecret;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AuthService"/> class.
+        /// </summary>
+        /// <param name="userManager">The user manager for managing user accounts.</param>
+        /// <param name="signInManager">The sign-in manager for handling user sign-in operations.</param>
+        /// <param name="configuration">The configuration for accessing application settings.</param>
+        /// <param name="jwtSecret">The secret key used for signing JWT tokens.</param>
+        /// <remarks>
+        /// The <paramref name="jwtSecret"/> should be a secure, randomly generated string.
+        /// It is recommended to store it in a secure location, such as environment variables or a secrets manager.
+        /// </remarks>
         public AuthService(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
@@ -29,6 +44,7 @@ namespace ReenbitTest.Infrastructure.Services
             _jwtSecret = jwtSecret;
         }
 
+        /// <inheritdoc/>
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto)
         {
             var response = new AuthResponseDto { Success = false, Errors = new List<string>() };
@@ -58,6 +74,7 @@ namespace ReenbitTest.Infrastructure.Services
             return response;
         }
 
+        /// <inheritdoc/>
         public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
         {
             var response = new AuthResponseDto { Success = false, Errors = new List<string>() };
@@ -87,6 +104,7 @@ namespace ReenbitTest.Infrastructure.Services
             return response;
         }
 
+        /// <inheritdoc/>
         public string GenerateJwtToken(ApplicationUser user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -114,6 +132,11 @@ namespace ReenbitTest.Infrastructure.Services
             return tokenHandler.WriteToken(token);
         }
 
+        /// <summary>
+        /// Maps an ApplicationUser entity to a UserDto.
+        /// </summary>
+        /// <param name="user">The user to map.</param>
+        /// <returns>A UserDto containing the user's public information.</returns>
         private UserDto MapToUserDto(ApplicationUser user)
         {
             return new UserDto
