@@ -74,7 +74,7 @@ namespace ReenbitTest.Infrastructure.Data
             {
                 new ApplicationUser
                 {
-                    UserName = "admin@example.com",
+                    UserName = "admin",
                     Email = "admin@example.com",
                     FirstName = "Admin",
                     LastName = "User",
@@ -84,7 +84,7 @@ namespace ReenbitTest.Infrastructure.Data
                 },
                 new ApplicationUser
                 {
-                    UserName = "john.doe@example.com",
+                    UserName = "john.doe",
                     Email = "john.doe@example.com",
                     FirstName = "John",
                     LastName = "Doe",
@@ -94,7 +94,7 @@ namespace ReenbitTest.Infrastructure.Data
                 },
                 new ApplicationUser
                 {
-                    UserName = "jane.smith@example.com",
+                    UserName = "jane.smith",
                     Email = "jane.smith@example.com",
                     FirstName = "Jane",
                     LastName = "Smith",
@@ -104,7 +104,7 @@ namespace ReenbitTest.Infrastructure.Data
                 },
                 new ApplicationUser
                 {
-                    UserName = "bob.johnson@example.com",
+                    UserName = "bob.johnson",
                     Email = "bob.johnson@example.com",
                     FirstName = "Bob",
                     LastName = "Johnson",
